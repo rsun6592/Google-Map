@@ -1,0 +1,48 @@
+import pandas as pd
+import overpy
+
+# Define the area you want to search in, for example, a specific city or coordinates
+area_query = "New York City"
+
+# Initialize the Overpass API
+api = overpy.Overpass()
+
+# Define your query to search for food trucks
+food_truck_query = f"""
+    area["name"="{area_query}"]->.a;
+    node["amenity"="food_court"](area.a);
+    out;
+"""
+
+# Execute the query and get the results
+result = api.query(food_truck_query)
+
+# Initialize lists to store the information
+names = []
+addresses = []
+ratings = []
+websites = []
+open_hours = []
+cuisine_types = []
+
+# Loop through the results and extract the information
+for node in result.nodes:
+    names.append(node.tags.get("name", "N/A"))
+    addresses.append(node.tags.get("addr:full", "N/A"))
+    ratings.append(node.tags.get("stars", "N/A"))
+    websites.append(node.tags.get("website", "N/A"))
+    open_hours.append(node.tags.get("opening_hours", "N/A"))
+    cuisine_types.append(node.tags.get("cuisine", "N/A"))
+
+# Create a DataFrame to organize the data
+food_trucks_data = pd.DataFrame({
+    "Name": names,
+    "Address": addresses,
+    "Rating": ratings,
+    "Website": websites,
+    "Open Hours": open_hours,
+    "Cuisine Type": cuisine_types
+})
+
+# Print the DataFrame
+print(food_trucks_data)
