@@ -1,0 +1,51 @@
+import googlemaps
+import pandas as pd
+
+# Load the food truck data from the CSV file
+food_trucks_df = pd.read_csv("food_trucks_data.csv")
+
+# Filter food trucks with a total user rating above 50
+filtered_food_trucks = food_trucks_df[food_trucks_df['Users Total Ratings'] > 50]
+
+# Initialize the Google Maps client
+gmaps = googlemaps.Client(key='AIzaSyB4bu1yyD9_eLRWiq7gWYKQPNjHUl9wJI4')  # Replace with your API key
+
+# Calculate travel distances from your location to food trucks
+your_location = "516 W Stadium Ave, West Lafayette, IN 47906"
+
+# Define a function to calculate the distance
+def calculate_distance(origin, destination):
+    directions = gmaps.directions(origin, destination, mode="driving")
+    if directions:
+        return directions[0]['legs'][0]['distance']['value']  # Return distance in meters for sorting
+    else:
+        return float('inf')  # Return infinity if no directions found
+
+# Sort the filtered data by rating in descending order
+filtered_food_trucks = filtered_food_trucks.sort_values(by=['Rating'], ascending=False)
+
+# Create an empty list to store the foodie plan
+foodie_plan = []
+
+# Start with the closest restaurant to your location
+current_location = your_location
+count = 0
+
+while count < 6 and not filtered_food_trucks.empty:
+    nearest_truck = filtered_food_trucks.iloc[0]  # Select the top-rated restaurant
+    foodie_plan.append(nearest_truck)
+    filtered_food_trucks = filtered_food_trucks[filtered_food_trucks['Name'] != nearest_truck['Name']]
+    current_location = nearest_truck['Address']
+    count += 1
+
+# Create a DataFrame from the foodie plan
+foodie_plan_df = pd.DataFrame(foodie_plan)
+
+# Assign day and time to the foodie plan
+day_schedule = ["Day 1"] * 3 + ["Day 2"] * 3
+time_schedule = ["10:00 AM", "2:00 PM", "6:00 PM"] * 2
+foodie_plan_df['Day'] = day_schedule
+foodie_plan_df['Time'] = time_schedule
+
+# Save the foodie plan to a CSV file
+foodie_plan_df.to_csv("foodie_plan.csv", index=False)
