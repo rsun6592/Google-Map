@@ -1,48 +1,79 @@
+import googlemaps
 import pandas as pd
-import overpy
+from datetime import datetime
+import folium
 
-# Define the area you want to search in, for example, a specific city or coordinates
-area_query = "New York City"
+# Set up your Google Maps API key
+api_key = "AIzaSyB4bu1yyD9_eLRWiq7gWYKQPNjHUl9wJI4"  # Replace with your API key
 
-# Initialize the Overpass API
-api = overpy.Overpass()
+# Initialize the Google Maps client
+gmaps = googlemaps.Client(key=api_key)
 
-# Define your query to search for food trucks
-food_truck_query = f"""
-    area["name"="{area_query}"]->.a;
-    node["amenity"="food_court"](area.a);
-    out;
-"""
+# Define a location to start your foodie journey
+location = "Indianapolis, IN"
 
-# Execute the query and get the results
-result = api.query(food_truck_query)
 
-# Initialize lists to store the information
-names = []
-addresses = []
-ratings = []
-websites = []
-open_hours = []
-cuisine_types = []
+# Define the keyword for your search (e.g., "food truck")
+keyword = "food truck"
 
-# Loop through the results and extract the information
-for node in result.nodes:
-    names.append(node.tags.get("name", "N/A"))
-    addresses.append(node.tags.get("addr:full", "N/A"))
-    ratings.append(node.tags.get("stars", "N/A"))
-    websites.append(node.tags.get("website", "N/A"))
-    open_hours.append(node.tags.get("opening_hours", "N/A"))
-    cuisine_types.append(node.tags.get("cuisine", "N/A"))
+# Perform a Places API search
+places = gmaps.places(query=keyword, location=location, radius=5000)
+print(places["results"])
+# Extract and process the place data (similar to the previous example)
+for place in places["results"]:
+    # Extract relevant information
+    name = place.get("name", "N/A")
+    address = place.get("formatted_address", "N/A")
+    website = place.get("icon", "N/A") if "website" in place else "N/A"
+    rating = place.get("rating", "N/A")
+    usersTotal = place.get("user_ratings_total", "N/A")
+    open_hours = place.get("opening_hours", {})
+    cuisine_types = ", ".join(place.get("types", ["N/A"]))
+    # Process and store this information as needed
+
+# Initialize lists to store food truck data
+food_truck_data = {
+    "Name": [],
+    "Address": [],
+    "Rating": [],
+    "Users Total Ratings": [],
+    "Website": [],
+    "Open Hours": [],
+    "Cuisine Type": [],
+    "Latitude": [],
+    "Longitude": []
+}
+
+# Extract information from the Places API response
+for place in places["results"]:
+    food_truck_data["Name"].append(place.get("name"))
+    food_truck_data["Address"].append(place.get("formatted_address"))
+    food_truck_data["Rating"].append(place.get("rating"))
+    food_truck_data["Users Total Ratings"].append(place.get("user_ratings_total"))
+    food_truck_data["Website"].append(place.get("icon"))
+    food_truck_data["Open Hours"].append(place.get("opening_hours", {}))
+    food_truck_data["Cuisine Type"].append(", ".join(place.get("types", ["N/A"])))
+    location = place["geometry"]["location"]
+    food_truck_data["Latitude"].append(location["lat"])
+    food_truck_data["Longitude"].append(location["lng"])
 
 # Create a DataFrame to organize the data
-food_trucks_data = pd.DataFrame({
-    "Name": names,
-    "Address": addresses,
-    "Rating": ratings,
-    "Website": websites,
-    "Open Hours": open_hours,
-    "Cuisine Type": cuisine_types
-})
+food_trucks_df = pd.DataFrame(food_truck_data)
 
-# Print the DataFrame
-print(food_trucks_data)
+# Save the food truck data to a CSV file
+food_trucks_df.to_csv("food_trucks_data.csv", index=False)
+
+# Create a map for visualization
+m = folium.Map(location=[food_trucks_df["Latitude"].mean(), food_trucks_df["Longitude"].mean()], zoom_start=13)
+
+# Add markers for food truck locations to the map
+for _, truck in food_trucks_df.iterrows():
+    folium.Marker(
+        location=[truck["Latitude"], truck["Longitude"]],
+        popup=truck["Name"],
+    ).add_to(m)
+
+# Save the map to an HTML file
+m.save("food_truck_map.html")
+
+print(place)
