@@ -18,7 +18,7 @@ keyword = "food truck"
 
 # Perform a Places API search
 places = gmaps.places(query=keyword, location=location, radius=5000)
-print(places["results"])
+
 # Extract and process the place data (similar to the previous example)
 for place in places["results"]:
     # Extract relevant information
@@ -62,3 +62,5 @@ food_trucks_df = pd.DataFrame(food_truck_data)
 
 # Save the food truck data to a CSV file
 food_trucks_df.to_csv("food_trucks_data.csv", index=False)
+
+
